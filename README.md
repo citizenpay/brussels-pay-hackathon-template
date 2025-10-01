@@ -22,7 +22,21 @@ Download and install the "Brussels Pay" app on your mobile phone:
 
 This app will be used to scan QR codes and confirm purchases. Brussels Pay is a local payment app specifically designed for the Brussels region, allowing you to support local businesses and make fast, contactless payments.
 
-### 2. Install Dependencies
+### 2. Set Up Environment Variables
+Copy the example environment file and configure your API credentials:
+
+```bash
+cp .env.example .env
+```
+
+Then edit the `.env` file with your Brussels Pay API credentials:
+- `CHECKOUT_BASE_URL`: Base URL for the Brussels Pay API
+- `CHECKOUT_API_KEY`: Your API key for authentication  
+- `CHECKOUT_PLACE_ID`: Your place/business ID
+
+You can get these values from your Brussels Pay dashboard or contact the hackathon organizers.
+
+### 3. Install Dependencies
 Install the required modules:
 
 ```bash
@@ -33,7 +47,7 @@ yarn install
 pnpm install
 ```
 
-### 3. Run the Project
+### 4. Run the Project
 Start the development server:
 
 ```bash
@@ -48,7 +62,7 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-### 4. Test the Payment Flow
+### 5. Test the Payment Flow
 - Try confirming a purchase in the web application
 - Scan the generated QR code with the Brussels Pay app
 - Complete the payment flow to test the integration
