@@ -1,6 +1,6 @@
 ## AI Prompt for Building a CitizenPay Checkout Page
 
-**Build a modern, responsive checkout page for CitizenPay using the provided API credentials and SDK. The page should integrate with the CitizenPay JS SDK for order creation and management.**
+**Build a modern, responsive checkout page for CitizenPay using the provided API credentials. The page should make direct HTTP requests to the CitizenPay API for order creation and management.**
 
 ### Environment Configuration
 Use these exact values in your implementation:
@@ -12,7 +12,7 @@ Use these exact values in your implementation:
 
 **Frontend Framework**: Use React with TypeScript
 **Styling**: Use Tailwind CSS for modern, responsive design
-**SDK Integration**: Install and use `@citizenpay/sdk` package
+**API Integration**: Make direct HTTP requests to the CitizenPay API
 
 ### Core Features to Implement
 
@@ -35,9 +35,54 @@ Use these exact values in your implementation:
 
 ### API Integration
 
-Use the SDK functions:
-- `createOrder()` - Create new orders with the provided credentials
-- `getOrder()` - Fetch order status and details
+Use these HTTP requests to interact with the CitizenPay API:
+
+**Create Order Request:**
+```typescript
+const createOrder = async (orderData: {
+  total: number;
+  description?: string;
+  items?: Array<{ id: number; quantity: number }>;
+}) => {
+  const response = await fetch('https://checkout.pay.brussels/api/v1/orders', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer 0xFb68096785d18883256e9489bE8F87940c9c551B`
+    },
+    body: JSON.stringify({
+      placeId: 365,
+      total: orderData.total,
+      description: orderData.description,
+      items: orderData.items
+    })
+  });
+  
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  return await response.json();
+};
+```
+
+**Fetch Order Status Request:**
+```typescript
+const getOrder = async (orderId: number) => {
+  const response = await fetch(`https://checkout.pay.brussels/api/v1/orders/${orderId}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer 0xFb68096785d18883256e9489bE8F87940c9c551B`
+    }
+  });
+  
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  return await response.json();
+};
+```
 
 ### UI/UX Requirements
 
@@ -85,25 +130,22 @@ The page should support creating orders like:
 ```typescript
 // Basic order
 const order = await createOrder({
-  baseUrl: 'https://checkout.pay.brussels',
-  apiKey: '0xFb68096785d18883256e9489bE8F87940c9c551B',
-  placeId: 365,
-  total: 2500, // €25.00 in cents
+  total: 100, // €1.00 in cents
   description: 'Coffee and pastry'
 });
 
 // Order with items
 const order = await createOrder({
-  baseUrl: 'https://checkout.pay.brussels',
-  apiKey: '0xFb68096785d18883256e9489bE8F87940c9c551B',
-  placeId: 365,
-  total: 5000, // €50.00 in cents
+  total: 100, // €1.00 in cents
   description: 'Restaurant order',
   items: [
     { id: 1, quantity: 2 },
     { id: 3, quantity: 1 }
   ]
 });
+
+// Fetch order status
+const orderStatus = await getOrder(12345);
 ```
 
 ### Deliverables
@@ -111,7 +153,7 @@ const order = await createOrder({
 1. Complete React TypeScript application
 2. Package.json with all dependencies
 3. Responsive HTML/CSS layout
-4. Full integration with CitizenPay SDK
+4. Full integration with CitizenPay API
 5. Error handling and loading states
 6. README with setup instructions
 
