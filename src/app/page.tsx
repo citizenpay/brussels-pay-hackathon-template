@@ -1,103 +1,374 @@
+"use client";
+
+import { createOrderAction, getOrderAction } from "@/actions/order";
 import Image from "next/image";
+import { useState, useEffect, useRef } from "react";
+import QRCode from "qrcode";
+import { Order } from "@citizenpay/sdk";
+import { Loader2 } from "lucide-react";
+import toast from "react-hot-toast";
 
-export default function Home() {
+export default function BrusselsMatchTeaProduct() {
+  const [quantity, setQuantity] = useState(1);
+  const [order, setOrder] = useState<Order | null>(null);
+  const [link, setLink] = useState<string | null>(null);
+  const [isOrderConfirmed, setIsOrderConfirmed] = useState(false);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [isPolling, setIsPolling] = useState(false);
+
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Generate QR code when link is available
+  useEffect(() => {
+    if (link) {
+      QRCode.toDataURL(link, {
+        width: 256,
+        margin: 2,
+        color: {
+          dark: "#000000",
+          light: "#FFFFFF",
+        },
+      })
+        .then((dataUrl) => {
+          setQrCodeDataUrl(dataUrl);
+          setShowModal(true);
+        })
+        .catch((error) => {
+          console.error("Error generating QR code:", error);
+        });
+    }
+  }, [link]);
+
+  // Poll order status when order is created
+  useEffect(() => {
+    if (order && isPolling) {
+      if (order.status === "paid") {
+        // Clear the polling interval
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+        setIsPolling(false);
+        setShowModal(false);
+        toast.success("Payment successful! Your order has been confirmed.");
+      }
+    }
+  }, [order, isPolling]);
+
+  // Cleanup interval on component unmount
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, []);
+
+  const handleConfirmOrder = async () => {
+    setIsOrderConfirmed(true);
+
+    try {
+      const order = await createOrderAction({
+        total: quantity * 100, // in cents
+        description: "Brussels Matcha Tea",
+      });
+
+      console.log(order);
+
+      setLink(order.link);
+      setIsOrderConfirmed(true);
+      setIsPolling(true);
+
+      intervalRef.current = setInterval(async () => {
+        try {
+          const pendingOrder = await getOrderAction(order.orderId);
+          setOrder(pendingOrder);
+        } catch (error) {
+          console.error(error);
+          clearInterval(intervalRef.current as NodeJS.Timeout);
+          intervalRef.current = null;
+          setIsPolling(false);
+        }
+      }, 1000);
+    } catch (error) {
+      console.error(error);
+      setLink(null);
+    }
+  };
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="min-h-screen bg-background">
+      {/* Mobile-optimized container with max-width */}
+      <div className="max-w-md mx-auto bg-background min-h-screen">
+        {/* Header */}
+        <header className="border-b border-border bg-card">
+          <div className="px-4 sm:px-6">
+            <div className="flex items-center justify-between h-16">
+              <div className="flex items-center">
+                <h1 className="text-lg sm:text-xl font-bold text-foreground">
+                  Brussels Tea Co.
+                </h1>
+              </div>
+              <nav className="hidden md:flex space-x-8">
+                <a
+                  href="#"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  Shop
+                </a>
+                <a
+                  href="#"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  About
+                </a>
+                <a
+                  href="#"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  Contact
+                </a>
+              </nav>
+            </div>
+          </div>
+        </header>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+        {/* Product Section */}
+        <main className="px-4 sm:px-6 py-6">
+          <div className="space-y-6">
+            {/* Product Image */}
+            <div className="space-y-3">
+              <div className="aspect-square bg-muted rounded-lg overflow-hidden">
+                <Image
+                  src="/assets/matcha-tea.png"
+                  alt="Brussels Matcha Tea - Premium ceremonial grade matcha"
+                  width={400}
+                  height={400}
+                  className="w-full h-full object-cover"
+                  priority
+                />
+              </div>
+
+              {/* Additional product images placeholder */}
+              <div className="grid grid-cols-4 gap-2">
+                {[1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className="aspect-square bg-muted rounded-md"
+                  ></div>
+                ))}
+              </div>
+            </div>
+
+            {/* Product Details */}
+            <div className="space-y-4">
+              <div>
+                <h1 className="text-2xl font-bold text-foreground mb-2">
+                  Brussels Matcha Tea
+                </h1>
+                <p className="text-base text-muted-foreground">
+                  Premium ceremonial grade matcha from the heart of Brussels
+                </p>
+              </div>
+
+              {/* Price */}
+              <div className="flex items-center space-x-3">
+                <span className="text-2xl font-bold text-foreground">
+                  €1.00
+                </span>
+                <span className="text-base text-muted-foreground line-through">
+                  €29.99
+                </span>
+                <span className="bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded-full">
+                  Save 17%
+                </span>
+              </div>
+
+              {/* Rating */}
+              <div className="flex items-center space-x-2">
+                <div className="flex text-yellow-400">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <span key={star}>★</span>
+                  ))}
+                </div>
+                <span className="text-sm text-muted-foreground">
+                  (127 reviews)
+                </span>
+              </div>
+
+              {/* Description */}
+              <div className="space-y-3">
+                <h3 className="text-base font-semibold text-foreground">
+                  About this product
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Experience the perfect blend of traditional Japanese matcha
+                  craftsmanship with a unique Brussels twist. Our premium
+                  ceremonial grade matcha is carefully sourced and stone-ground
+                  to perfection, delivering a rich, creamy texture and vibrant
+                  green color that&apos;s perfect for both traditional tea
+                  ceremonies and modern matcha lattes.
+                </p>
+
+                <ul className="space-y-1.5 text-sm text-muted-foreground">
+                  <li className="flex items-center">
+                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-2"></span>
+                    Ceremonial grade quality
+                  </li>
+                  <li className="flex items-center">
+                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-2"></span>
+                    Stone-ground to perfection
+                  </li>
+                  <li className="flex items-center">
+                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-2"></span>
+                    Rich in antioxidants and L-theanine
+                  </li>
+                  <li className="flex items-center">
+                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-2"></span>
+                    Sustainably sourced
+                  </li>
+                </ul>
+              </div>
+
+              {/* Quantity and Add to Cart */}
+              <div className="space-y-3">
+                <div className="flex items-center space-x-3">
+                  <label
+                    htmlFor="quantity"
+                    className="text-sm font-medium text-foreground"
+                  >
+                    Quantity:
+                  </label>
+                  <div className="flex items-center border border-border rounded-md">
+                    <button
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="px-4 py-2 text-muted-foreground hover:text-foreground touch-manipulation"
+                    >
+                      -
+                    </button>
+                    <span className="px-4 py-2 border-x border-border text-foreground min-w-[3rem] text-center">
+                      {quantity}
+                    </span>
+                    <button
+                      onClick={() => setQuantity(quantity + 1)}
+                      className="px-4 py-2 text-muted-foreground hover:text-foreground touch-manipulation"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                {/* Confirm Order Button */}
+                <button
+                  onClick={handleConfirmOrder}
+                  disabled={isOrderConfirmed}
+                  className={`w-full py-3 px-4 rounded-lg font-semibold text-base transition-all duration-200 touch-manipulation ${
+                    isOrderConfirmed
+                      ? "bg-green-500 text-white cursor-not-allowed"
+                      : "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95"
+                  }`}
+                >
+                  {isOrderConfirmed ? (
+                    <div className="flex items-center justify-center space-x-2">
+                      <span>Order Confirmed!</span>
+                    </div>
+                  ) : (
+                    "Confirm Order"
+                  )}
+                </button>
+
+                {/* Order Summary */}
+                <div className="bg-muted p-3 rounded-lg space-y-1.5">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Subtotal:</span>
+                    <span className="text-foreground">
+                      €{(1 * quantity).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Tax:</span>
+                    <span className="text-foreground">
+                      €{(1 * quantity * 0.21).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="border-t border-border pt-2">
+                    <div className="flex justify-between font-semibold">
+                      <span className="text-foreground">Total:</span>
+                      <span className="text-foreground">
+                        €{(1 * quantity + 0 + 1 * quantity * 0.21).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional Info */}
+              <div className="space-y-3 pt-4 border-t border-border">
+                <div className="flex flex-col space-y-2 text-xs text-muted-foreground">
+                  <div className="flex items-center">
+                    <span className="mr-2">🚚</span>
+                    Free shipping on orders over €50
+                  </div>
+                  <div className="flex items-center">
+                    <span className="mr-2">↩️</span>
+                    30-day returns
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+
+      {/* QR Code Modal */}
+      {showModal && link && qrCodeDataUrl && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
+            <div className="text-center space-y-4">
+              <h2 className="text-xl font-bold text-gray-900">Scan to Pay</h2>
+              <p className="text-sm text-gray-600">
+                Scan this QR code with your Brussels Pay app to complete payment
+              </p>
+
+              {/* QR Code */}
+              <div className="flex justify-center">
+                <Image
+                  src={qrCodeDataUrl}
+                  alt="Payment QR Code"
+                  width={256}
+                  height={256}
+                  className="w-64 h-64 border border-gray-200 rounded-lg"
+                />
+              </div>
+
+              {/* Loading State */}
+              {isPolling && (
+                <div className="flex items-center justify-center space-x-2 text-sm text-gray-600">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Waiting for payment confirmation...</span>
+                </div>
+              )}
+
+              {/* Direct Link Button */}
+              <button
+                onClick={() => window.open(link, "_blank")}
+                className="w-full bg-primary text-primary-foreground py-3 px-4 rounded-lg font-semibold hover:bg-primary/90 transition-colors"
+              >
+                Pay Directly
+              </button>
+
+              {/* Close Button */}
+              <button
+                onClick={() => setShowModal(false)}
+                className="w-full bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      )}
     </div>
   );
 }
