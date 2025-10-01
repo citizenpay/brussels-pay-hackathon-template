@@ -44,7 +44,7 @@ const createOrder = async (orderData: {
   description?: string;
   items?: Array<{ id: number; quantity: number }>;
 }) => {
-  const response = await fetch('https://checkout.pay.brussels/api/v1/orders', {
+  const response = await fetch('https://checkout.pay.brussels/api/v1/partners/orders', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -69,7 +69,7 @@ const createOrder = async (orderData: {
 **Fetch Order Status Request:**
 ```typescript
 const getOrder = async (orderId: number) => {
-  const response = await fetch(`https://checkout.pay.brussels/api/v1/orders/${orderId}`, {
+  const response = await fetch(`https://checkout.pay.brussels/api/v1/partners/orders/${orderId}`, {
     method: 'GET',
     headers: {
       'x-api-key': `0xFb68096785d18883256e9489bE8F87940c9c551B`
