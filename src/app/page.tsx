@@ -1,5 +1,30 @@
 "use client";
 
+/**
+ * BRUSSELS PAY HACKATHON DEMO PAGE
+ *
+ * This is a demo e-commerce page showcasing Brussels Pay integration.
+ *
+ * MANDATORY FUNCTIONS (must be implemented):
+ * - createOrderAction: Creates an order and returns a payment link
+ * - getOrderAction: Polls order status to check if payment is completed
+ *
+ * OPTIONAL FEATURES (implement as desired):
+ * - QR Code generation for mobile payments
+ * - Real-time order status polling
+ * - Toast notifications for user feedback
+ * - Modal UI for payment flow
+ * - Product catalog and cart functionality
+ * - Order confirmation and success states
+ *
+ * The core payment flow:
+ * 1. User clicks "Confirm Order" → calls createOrderAction()
+ * 2. System receives payment link → displays QR code or direct link
+ * 3. User completes payment via Brussels Pay app
+ * 4. System polls getOrderAction() until status becomes "paid"
+ * 5. Show success message and complete the order
+ */
+
 import { createOrderAction, getOrderAction } from "@/actions/order";
 import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
@@ -9,17 +34,26 @@ import { Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function BrusselsMatchTeaProduct() {
+  // State management for the payment flow
   const [quantity, setQuantity] = useState(1);
-  const [order, setOrder] = useState<Order | null>(null);
-  const [link, setLink] = useState<string | null>(null);
+  const [order, setOrder] = useState<Order | null>(null); // Current order object from getOrderAction
+  const [link, setLink] = useState<string | null>(null); // Payment link from createOrderAction
   const [isOrderConfirmed, setIsOrderConfirmed] = useState(false);
-  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [isPolling, setIsPolling] = useState(false);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null); // OPTIONAL: QR code for mobile payments
+  const [showModal, setShowModal] = useState(false); // OPTIONAL: Modal for payment UI
+  const [isPolling, setIsPolling] = useState(false); // Controls order status polling
 
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null); // Reference for polling interval
 
-  // Generate QR code when link is available
+  /**
+   * OPTIONAL: QR Code generation effect
+   *
+   * This effect generates a QR code from the payment link when available.
+   * The QR code allows users to scan and pay directly with their Brussels Pay app.
+   *
+   * This is completely optional - you can also just show the payment link directly
+   * or implement your own payment UI flow.
+   */
   useEffect(() => {
     if (link) {
       QRCode.toDataURL(link, {
@@ -40,7 +74,20 @@ export default function BrusselsMatchTeaProduct() {
     }
   }, [link]);
 
-  // Poll order status when order is created
+  /**
+   * OPTIONAL: Order status polling effect
+   *
+   * This effect monitors the order status and handles payment completion.
+   * When order.status becomes "paid", it:
+   * - Stops the polling interval
+   * - Closes the payment modal
+   * - Shows success notification
+   *
+   * Order statuses you can expect:
+   * - "pending": Order created, waiting for payment
+   * - "paid": Payment completed successfully
+   * - "failed": Payment failed or cancelled
+   */
   useEffect(() => {
     if (order && isPolling) {
       if (order.status === "paid") {
@@ -65,34 +112,54 @@ export default function BrusselsMatchTeaProduct() {
     };
   }, []);
 
+  /**
+   * MANDATORY FUNCTION: Main order confirmation handler
+   *
+   * This function demonstrates the core Brussels Pay integration:
+   * 1. Calls createOrderAction() to create an order and get payment link
+   * 2. Sets up polling with getOrderAction() to check payment status
+   *
+   * Parameters for createOrderAction:
+   * - total: Order total in cents (quantity * 100)
+   * - description: Order description (optional)
+   * - items: Array of order items (optional)
+   *
+   * Returns from createOrderAction:
+   * - orderId: Unique order identifier for polling
+   * - link: Payment URL that user can open in Brussels Pay app
+   */
   const handleConfirmOrder = async () => {
     setIsOrderConfirmed(true);
 
     try {
+      // MANDATORY: Create order and get payment link
       const order = await createOrderAction({
         total: quantity * 100, // in cents
         description: "Brussels Matcha Tea",
       });
 
-      console.log(order);
+      console.log("Order created:", order);
 
+      // Store the payment link for QR code generation
       setLink(order.link);
       setIsOrderConfirmed(true);
       setIsPolling(true);
 
+      // MANDATORY: Poll order status until payment is completed
       intervalRef.current = setInterval(async () => {
         try {
+          // MANDATORY: Check order status using orderId
           const pendingOrder = await getOrderAction(order.orderId);
           setOrder(pendingOrder);
         } catch (error) {
-          console.error(error);
+          console.error("Error polling order status:", error);
           clearInterval(intervalRef.current as NodeJS.Timeout);
           intervalRef.current = null;
           setIsPolling(false);
         }
-      }, 1000);
+      }, 1000); // Poll every second
     } catch (error) {
-      console.error(error);
+      console.error("Error creating order:", error);
       setLink(null);
     }
   };
@@ -372,3 +439,29 @@ export default function BrusselsMatchTeaProduct() {
     </div>
   );
 }
+
+/**
+ * HACKATHON IMPLEMENTATION NOTES:
+ *
+ * MINIMUM VIABLE IMPLEMENTATION:
+ * 1. Call createOrderAction() when user wants to pay
+ * 2. Display the returned payment link to user
+ * 3. Call getOrderAction() periodically to check if payment is complete
+ * 4. Handle the "paid" status to complete the order
+ *
+ * ENVIRONMENT VARIABLES REQUIRED:
+ * - CHECKOUT_BASE_URL: Brussels Pay API base URL
+ * - CHECKOUT_API_KEY: Your API key for authentication
+ * - CHECKOUT_PLACE_ID: Your place/merchant ID
+ *
+ * CUSTOMIZATION IDEAS:
+ * - Replace this tea product with your own product/service
+ * - Implement different payment flows (direct link, embedded iframe, etc.)
+ * - Add order history, receipts, or customer management
+ * - Integrate with your existing e-commerce platform
+ * - Add multiple payment methods or currencies
+ * - Implement webhook handling instead of polling
+ *
+ * The Brussels Pay SDK provides all the necessary functions - this demo
+ * shows the basic integration pattern that you can adapt for your needs.
+ */

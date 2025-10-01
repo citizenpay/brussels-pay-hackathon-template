@@ -1,8 +1,40 @@
+# Brussels Pay Crypto Wednesday Hackathon
+
+This project is part of the [Brussels Pay Crypto Wednesday Hackathon](https://pay.brussels/events/crypto-wednesday-hackathon), an event focused on developing innovative payment solutions using cryptocurrency technologies. Participants collaborate to create projects that enhance the adoption and functionality of digital currencies in everyday transactions.
+
+The hackathon provides a platform for developers, designers, and entrepreneurs to network, share ideas, and contribute to the evolution of modern payment systems.
+
+---
+
+## Project Template
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
 
-First, run the development server:
+Follow these steps to get started with the Brussels Pay hackathon project:
+
+### 1. Install Brussels Pay App
+Download and install the "Brussels Pay" app on your mobile phone:
+
+- **iOS (iPhone/iPad)**: [Download from App Store](https://apps.apple.com/us/app/brussels-pay/id6742148784)
+- **Android**: [Download from Google Play Store](https://play.google.com/store/apps/details?id=brussels.pay.wallet2&hl=en-US)
+
+This app will be used to scan QR codes and confirm purchases. Brussels Pay is a local payment app specifically designed for the Brussels region, allowing you to support local businesses and make fast, contactless payments.
+
+### 2. Install Dependencies
+Install the required modules:
+
+```bash
+npm install
+# or
+yarn install
+# or
+pnpm install
+```
+
+### 3. Run the Project
+Start the development server:
 
 ```bash
 npm run dev
@@ -15,6 +47,11 @@ bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+### 4. Test the Payment Flow
+- Try confirming a purchase in the web application
+- Scan the generated QR code with the Brussels Pay app
+- Complete the payment flow to test the integration
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
