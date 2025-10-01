@@ -48,7 +48,7 @@ const createOrder = async (orderData: {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer 0xFb68096785d18883256e9489bE8F87940c9c551B`
+      'x-api-key': `0xFb68096785d18883256e9489bE8F87940c9c551B`
     },
     body: JSON.stringify({
       placeId: 365,
@@ -72,7 +72,7 @@ const getOrder = async (orderId: number) => {
   const response = await fetch(`https://checkout.pay.brussels/api/v1/orders/${orderId}`, {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer 0xFb68096785d18883256e9489bE8F87940c9c551B`
+      'x-api-key': `0xFb68096785d18883256e9489bE8F87940c9c551B`
     }
   });
   
